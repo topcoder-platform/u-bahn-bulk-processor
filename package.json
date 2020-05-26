@@ -1,0 +1,35 @@
+{
+  "name": "bulk-record-processor",
+  "version": "1.0.0",
+  "description": "UBahn - Bulk Record Processor",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "lint": "standard",
+    "lint:fix": "standard --fix",
+    "mockServer": "node mock/main.js"
+  },
+  "author": "TCSCODER",
+  "license": "none",
+  "devDependencies": {
+    "standard": "^12.0.1"
+  },
+  "dependencies": {
+    "@hapi/joi": "^15.1.0",
+    "amazon-s3-uri": "0.0.3",
+    "aws-sdk": "^2.476.0",
+    "axios": "^0.19.2",
+    "bluebird": "^3.5.5",
+    "config": "^3.1.0",
+    "get-parameter-names": "^0.3.0",
+    "lodash": "^4.17.15",
+    "no-kafka": "^3.4.3",
+    "tc-core-library-js": "appirio-tech/tc-core-library-js.git#v2.6",
+    "topcoder-healthcheck-dropin": "^1.0.3",
+    "winston": "^3.2.1",
+    "xlsx": "^0.16.0"
+  },
+  "engines": {
+    "node": "12.x"
+  }
+}
