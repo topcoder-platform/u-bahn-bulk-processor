@@ -21,7 +21,12 @@ module.exports = {
   UBAHN_API_URL: process.env.UBAHN_API_URL || 'http://localhost:3001',
   UBAHN_SEARCH_UI_API_URL: process.env.UBAHN_SEARCH_UI_API_URL || 'http://localhost:3001',
 
+  TOPCODER_USERS_API: process.env.TOPCODER_USERS_API || 'https://api.topcoder-dev.com/v3/users',
+
   PROCESS_CONCURRENCY_COUNT: process.env.PROCESS_CONCURRENCY_COUNT || 25,
+
+  // When a user is not found, should we proceed to create the user or treat it as error
+  CREATE_MISSING_USER_FLAG: process.env.CREATE_MISSING_USER_FLAG === 'true',
 
   AUTH0_URL: process.env.AUTH0_URL || 'https://topcoder-dev.auth0.com/oauth/token', // Auth0 credentials
   AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE || 'https://m2m.topcoder-dev.com/',

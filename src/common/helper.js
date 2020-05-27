@@ -90,10 +90,10 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
     }
   } catch (err) {
     logger.error(err)
-    throw Error(`get ${path} by params: ${JSON.stringify(params)} fail`)
+    throw Error(`get ${path} by params: ${JSON.stringify(params)} failed`)
   }
-  logger.error(`get ${path} by params: ${JSON.stringify(params)} fail`)
-  throw Error(`get ${path} by params: ${JSON.stringify(params)} fail`)
+  logger.error(`get ${path} by params: ${JSON.stringify(params)} failed`)
+  throw Error(`get ${path} by params: ${JSON.stringify(params)} failed`)
 }
 
 /**
@@ -111,7 +111,26 @@ async function createUbahnRecord (path, data) {
     return res.data
   } catch (err) {
     logger.error(err)
-    throw Error(`post ${path} by data: ${JSON.stringify(data)} fail`)
+    throw Error(`post ${path} by data: ${JSON.stringify(data)} failed`)
+  }
+}
+
+/**
+ * Creates user in Topcoder (sso user)
+ * @param {Object} user The user to create
+ */
+async function createUserInTopcoder (user) {
+  const url = config.TOPCODER_USERS_API
+  const requestBody = { param: user }
+  const token = await getM2Mtoken()
+
+  logger.debug(`request ${url} by data: ${JSON.stringify(user)}`)
+  try {
+    const res = await axios.post(`${url}`, requestBody, { headers: { Authorization: `Bearer ${token}` } })
+    return res.data
+  } catch (err) {
+    logger.error(err)
+    throw Error(`post ${url} by data: ${JSON.stringify(user)} failed`)
   }
 }
 
@@ -164,7 +183,7 @@ function parseExcel (file) {
       resultData.push(rowData)
     }
   }
-  logger.info(`parseing excel file finish, the record count is ${resultData.length}`)
+  logger.info(`parsing excel file finish, the record count is ${resultData.length}`)
   return resultData
 }
 
@@ -174,6 +193,7 @@ module.exports = {
   parseExcel,
   getUbahnSingleRecord,
   createUbahnRecord,
+  createUserInTopcoder,
   updateProcessStatus,
   uploadFailedRecord
 }

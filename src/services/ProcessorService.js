@@ -9,16 +9,62 @@ const logger = require('../common/logger')
 const helper = require('../common/helper')
 
 /**
- * Function to get user id
- * @param {String} handle user handle
- * @returns {Promise} user id
+ * Creates the user in UBahn api as well as Topcoder's Users api
+ * @param {Object} user The user to create
  */
-async function getUserId (handle) {
-  const users = await helper.getUbahnSingleRecord('/users', { handle }, true)
-  if (users) {
-    return users.id
+async function createUser (user) {
+  // Create the user in UBahn api
+  const ubahnUserId = (await helper.createUbahnRecord('/users', {
+    handle: user.handle
+  })).id
+
+  const { handle, firstName, lastName, email, countryName, providerType, provider, userId } = user
+
+  const topcoderUser = {
+    handle,
+    firstName,
+    lastName,
+    email,
+    active: true, // Verified user
+    country: {
+      name: countryName
+    },
+    profile: {
+      providerType,
+      provider,
+      userId
+    },
+    credential: {
+      password: ''
+    }
   }
-  return (await helper.createUbahnRecord('/users', { handle })).id
+
+  // Create the user in topcoder's Users api
+  await helper.createUserInTopcoder(topcoderUser)
+
+  // We will be only working with the user id in UBahn
+  return ubahnUserId
+}
+
+/**
+ * Function to get user id
+ * @param {Object} user
+ * @returns {Promise}
+ */
+async function getUserId (user) {
+  const record = await helper.getUbahnSingleRecord('/users', {
+    handle: user.handle
+  }, true)
+  if (record) {
+    return record.id
+  }
+
+  // No user found. Should we create the user or treat it as an error?
+  if (config.CREATE_MISSING_USER_FLAG) {
+    return createUser(user)
+  } else {
+    throw new Error(`Could not find user with handle ${user.handle}`)
+  }
 }
 
 /**
@@ -76,7 +122,7 @@ async function createUserAttributes (userId, record) {
  */
 async function processCreateRecord (record, failedRecord) {
   try {
-    const userId = await getUserId(record.handle)
+    const userId = await getUserId(record)
     await createUserSkill(userId, record.skillProviderName, record.skillName, record.skillCertifierId, record.skillCertifiedDate, record.metricValue)
     await createAchievement(userId, record.achievementsProviderName, record.achievementsCertifierId, record.achievementsCertifiedDate, record.achievementsName, record.achievementsUri)
     await createUserAttributes(userId, record)
@@ -110,7 +156,7 @@ async function processCreate (message) {
       logger.error(`process the record failed, err: ${err.message}`)
     }
   } else {
-    logger.info('Ignore this message since resource is not pending')
+    logger.info('Ignore this message since status is not pending')
   }
 }
 
