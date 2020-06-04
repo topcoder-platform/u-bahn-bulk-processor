@@ -137,7 +137,14 @@ async function processCreateRecord (record, failedRecord) {
  * @returns {Promise}
  */
 async function processCreate (message) {
-  const status = message.payload.status
+  const { resource, status } = message.payload
+
+  if (resource !== 'upload') {
+    logger.info('Ignoring this message since resource is not `upload`')
+
+    return
+  }
+
   if (status === 'pending') {
     try {
       const file = await helper.downloadFile(message.payload.url)
