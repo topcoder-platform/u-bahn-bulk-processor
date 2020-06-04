@@ -16,6 +16,7 @@ module.exports = {
   ACTION_CREATE_TOPIC: process.env.ACTION_CREATE_TOPIC || 'u-bahn.action.create',
 
   AWS_REGION: process.env.AWS_REGION || 'us-east-1',
+  S3_UPLOAD_RECORD_BUCKET: process.env.S3_UPLOAD_RECORD_BUCKET,
   S3_FAILED_RECORD_BUCKET: process.env.S3_FAILED_RECORD_BUCKET,
 
   UBAHN_API_URL: process.env.UBAHN_API_URL || 'http://localhost:3001',

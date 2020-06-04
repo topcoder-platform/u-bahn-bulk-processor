@@ -22,7 +22,8 @@ The following parameters can be set in config files or in env variables:
 - KAFKA_GROUP_ID: the Kafka group id, default value is 'bulk-record-processor'
 - ACTION_CREATE_TOPIC: the create action Kafka message topic, default value is 'ubahn.action.create'
 - AWS_REGION: The Amazon region to use when using AWS S3
-- S3_FAILED_RECORD_BUCKET: S3 bucket for process failed records file
+- S3_UPLOAD_RECORD_BUCKET: The S3 bucket from which the processor will download the uploaded file
+- S3_FAILED_RECORD_BUCKET: S3 bucket for storing uploaded files that failed processing
 - UBAHN_API_URL: The ubahn api url, default value: 'localhost:3001'
 - UBAHN_SEARCH_UI_API_URL: The ubahn ui api url, default value: 'localhost:3001'
 - TOPCODER_USERS_API: The topcoder users api, default value: 'http://api.topcoder-dev.com/v3/users'

@@ -3,7 +3,6 @@
  */
 const _ = require('lodash')
 const AWS = require('aws-sdk')
-const AmazonS3URI = require('amazon-s3-uri')
 const XLSX = require('xlsx')
 const axios = require('axios')
 const config = require('config')
@@ -36,26 +35,27 @@ function getKafkaOptions () {
 
 /**
  * Function to download file from given S3 URL
- * @param{String} fileURL S3 URL of the file to be downloaded
+ * @param {String} objectKey S3 object key of the file to be downloaded
  * @returns {Buffer} Buffer of downloaded file
  */
-async function downloadFile (fileURL) {
-  const { bucket, key } = AmazonS3URI(fileURL)
-  logger.info(`downloadFile(): file is on S3 ${bucket} / ${key}`)
-  const downloadedFile = await s3.getObject({ Bucket: bucket, Key: key }).promise()
+async function downloadFile (objectKey) {
+  const downloadedFile = await s3.getObject({
+    Bucket: config.S3_UPLOAD_RECORD_BUCKET,
+    Key: objectKey
+  }).promise()
+
   return downloadedFile.Body
 }
 
 /**
  * Function to upload error records file to S3
  * @param {Array} records error records
- * @param {String} sourceFileURL source file url for source s3 key
+ * @param {String} objectKey source file s3 object key
  * @returns {Promise}
  */
-async function uploadFailedRecord (records, sourceFileURL) {
-  const sourceName = AmazonS3URI(sourceFileURL).key
-  const extIndex = sourceName.lastIndexOf('.')
-  const errFileName = `${sourceName.substring(0, extIndex)}_errors_${Date.now()}${sourceName.substring(extIndex)}`
+async function uploadFailedRecord (records, objectKey) {
+  const extIndex = objectKey.lastIndexOf('.')
+  const errFileName = `${objectKey.substring(0, extIndex)}_errors_${Date.now()}${objectKey.substring(extIndex)}`
   // new workbook
   const wb = XLSX.utils.book_new()
   const wsData = []
@@ -66,7 +66,15 @@ async function uploadFailedRecord (records, sourceFileURL) {
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
   logger.info(`upload failed records to s3 by key: ${errFileName}`)
-  await s3.upload({ Bucket: config.S3_FAILED_RECORD_BUCKET, Key: errFileName, Body: XLSX.write(wb, { type: 'buffer' }) }).promise()
+  await s3.upload({
+    Bucket: config.S3_FAILED_RECORD_BUCKET,
+    Key: errFileName,
+    Body: XLSX.write(wb, { type: 'buffer' }),
+    ContentType: 'application/vnd.ms-excel',
+    Metadata: {
+      originalname: objectKey
+    }
+  }).promise()
 }
 
 /**
@@ -164,12 +172,11 @@ function parseExcel (file) {
   for (let i = colStart; i <= colEnd; i++) {
     header[i - colStart] = ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`].v
   }
-  const requireHeader = ['handle', 'skillName', 'skillProviderName', 'metricValue', 'skillCertifierId', 'skillCertifiedDate', 'achievementsProviderName',
-    'achievementsName', 'achievementsUri', 'achievementsCertifierId', 'achievementsCertifiedDate']
+  const requireHeader = ['handle', 'firstName', 'lastName', 'skillName', 'skillProviderName', 'metricValue', 'skillCertifierId', 'skillCertifiedDate', 'achievementsProviderName', 'achievementsName', 'achievementsUri', 'achievementsCertifierId', 'achievementsCertifiedDate']
   // check excel content
   if (!requireHeader.every(v => header.includes(v))) {
-    logger.error(`require ${JSON.stringify(requireHeader)} columns, but actual columns is ${JSON.stringify(header)}`)
-    throw Error(`require ${JSON.stringify(requireHeader)} columns, but actual columns is ${JSON.stringify(header)}`)
+    logger.error(`require ${JSON.stringify(requireHeader)} columns, but actual columns are ${JSON.stringify(header)}`)
+    throw Error(`require ${JSON.stringify(requireHeader)} columns, but actual columns are ${JSON.stringify(header)}`)
   }
   for (let i = rowStart + 1; i <= rowEnd; i++) {
     const rowData = {}

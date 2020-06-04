@@ -147,20 +147,20 @@ async function processCreate (message) {
 
   if (status === 'pending') {
     try {
-      const file = await helper.downloadFile(message.payload.url)
+      const file = await helper.downloadFile(message.payload.objectKey)
       const records = helper.parseExcel(file)
       const failedRecord = []
 
       await Promise.map(records, record => processCreateRecord(record, failedRecord), { concurrency: config.PROCESS_CONCURRENCY_COUNT })
 
       if (failedRecord.length > 0) {
-        await helper.uploadFailedRecord(failedRecord, message.payload.url)
+        await helper.uploadFailedRecord(failedRecord, message.payload.objectKey)
       }
       await helper.updateProcessStatus(message.payload.id, { status: 'completed' })
-      logger.info(`process the record completed, id: ${message.payload.id}, success count: ${records.length - failedRecord.length}, fail count: ${failedRecord.length}`)
+      logger.info(`processing of the record(s) completed, id: ${message.payload.id}, success count: ${records.length - failedRecord.length}, fail count: ${failedRecord.length}`)
     } catch (err) {
       await helper.updateProcessStatus(message.payload.id, { status: 'failed', info: err.message })
-      logger.error(`process the record failed, err: ${err.message}`)
+      logger.error(`processing of the record(s) failed with error: ${err.message}`)
     }
   } else {
     logger.info('Ignore this message since status is not pending')
@@ -174,9 +174,9 @@ processCreate.schema = {
     timestamp: Joi.date().required(),
     'mime-type': Joi.string().required(),
     payload: Joi.object().keys({
-      url: Joi.string().required(),
+      resource: Joi.string().required(),
+      objectKey: Joi.string().required(),
       status: Joi.string().required(),
-      info: Joi.string(),
       id: Joi.id()
     }).required().unknown(true)
   }).required()
