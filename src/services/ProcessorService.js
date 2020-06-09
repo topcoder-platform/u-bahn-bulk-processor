@@ -15,7 +15,9 @@ const helper = require('../common/helper')
 async function createUser (user) {
   // Create the user in UBahn api
   const ubahnUserId = (await helper.createUbahnRecord('/users', {
-    handle: user.handle
+    handle: user.handle,
+    firstName: user.firstName,
+    lastName: user.lastName
   })).id
 
   const { handle, firstName, lastName, email, countryName, providerType, provider, userId } = user

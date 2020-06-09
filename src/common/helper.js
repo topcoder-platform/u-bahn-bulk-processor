@@ -172,11 +172,10 @@ function parseExcel (file) {
   for (let i = colStart; i <= colEnd; i++) {
     header[i - colStart] = ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`].v
   }
-  const requireHeader = ['handle', 'firstName', 'lastName', 'skillName', 'skillProviderName', 'metricValue', 'skillCertifierId', 'skillCertifiedDate', 'achievementsProviderName', 'achievementsName', 'achievementsUri', 'achievementsCertifierId', 'achievementsCertifiedDate']
-  // check excel content
-  if (!requireHeader.every(v => header.includes(v))) {
-    logger.error(`require ${JSON.stringify(requireHeader)} columns, but actual columns are ${JSON.stringify(header)}`)
-    throw Error(`require ${JSON.stringify(requireHeader)} columns, but actual columns are ${JSON.stringify(header)}`)
+
+  if (!header.includes('handle')) {
+    logger.error('"handle" column is missing. Cannot process the rows. Aborting.')
+    throw Error('"handle" column is missing. Cannot process the rows. Aborting.')
   }
   for (let i = rowStart + 1; i <= rowEnd; i++) {
     const rowData = {}
