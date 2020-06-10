@@ -9,17 +9,24 @@ const logger = require('../common/logger')
 const helper = require('../common/helper')
 
 /**
- * Creates the user in UBahn api as well as Topcoder's Users api
- * @param {Object} user The user to create
+ * Creates user in ubahn
+ * @param {Object} param0 The user details
  */
-async function createUser (user) {
-  // Create the user in UBahn api
-  const ubahnUserId = (await helper.createUbahnRecord('/users', {
-    handle: user.handle,
-    firstName: user.firstName,
-    lastName: user.lastName
-  })).id
+async function createUserInUbahn ({ handle, firstName, lastName }) {
+  const user = await helper.createUbahnRecord('/users', {
+    handle,
+    firstName,
+    lastName
+  })
 
+  return user.id
+}
+
+/**
+ * Creates user in Topcoder
+ * @param {Object} user The user details
+ */
+async function createUserInTopcoder (user) {
   const { handle, firstName, lastName, email, countryName, providerType, provider, userId } = user
 
   const topcoderUser = {
@@ -42,7 +49,32 @@ async function createUser (user) {
   }
 
   // Create the user in topcoder's Users api
-  await helper.createUserInTopcoder(topcoderUser)
+  const newUser = await helper.createUserInTopcoder(topcoderUser)
+
+  return newUser.result.content.id
+}
+
+/**
+ * Creates the user in UBahn api as well as Topcoder's Users api
+ * @param {Object} user The user to create
+ */
+async function createUser (user) {
+  // Create the user in UBahn api
+  const ubahnUserId = await createUserInUbahn(user)
+
+  // Create the user in Topcoder too
+  const topcoderUserId = await createUserInTopcoder(user)
+
+  // Get the topcoder organization id
+  const topcoderOrgId = await helper.getUbahnSingleRecord('/organizations', {
+    name: config.TOPCODER_ORGANIZATION_NAME
+  })
+
+  // Now, proceed to map the topcoder user id with the ubahn user id
+  await helper.createUbahnRecord(`/users/${ubahnUserId}/externalProfiles`, {
+    organizationId: topcoderOrgId,
+    externalId: topcoderUserId
+  })
 
   // We will be only working with the user id in UBahn
   return ubahnUserId
@@ -82,7 +114,7 @@ async function getUserId (user) {
 async function createUserSkill (userId, skillProviderName, skillName, certifierId, certifiedDate, metricValue) {
   const skillProvider = await helper.getUbahnSingleRecord('/skillsProviders', { name: skillProviderName })
   const skill = await helper.getUbahnSingleRecord('/skills', { skillProviderId: skillProvider.id, name: skillName })
-  helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue, skillId: skill.id })
+  await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue, skillId: skill.id })
 }
 
 /**
@@ -97,7 +129,7 @@ async function createUserSkill (userId, skillProviderName, skillName, certifierI
  */
 async function createAchievement (userId, providerName, certifierId, certifiedDate, name, uri) {
   const achievementsProvider = await helper.getUbahnSingleRecord('/achievementsProviders', { name: providerName })
-  helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
+  await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
 }
 
 /**

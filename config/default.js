@@ -29,6 +29,9 @@ module.exports = {
   // When a user is not found, should we proceed to create the user or treat it as error
   CREATE_MISSING_USER_FLAG: process.env.CREATE_MISSING_USER_FLAG === 'true',
 
+  // The Topcoder organization to associate with a new user
+  TOPCODER_ORGANIZATION_NAME: process.env.TOPCODER_ORGANIZATION_NAME || 'topcoder',
+
   AUTH0_URL: process.env.AUTH0_URL || 'https://topcoder-dev.auth0.com/oauth/token', // Auth0 credentials
   AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE || 'https://m2m.topcoder-dev.com/',
   TOKEN_CACHE_TIME: process.env.TOKEN_CACHE_TIME,
