@@ -10,8 +10,6 @@ const logger = require('./common/logger')
 const helper = require('./common/helper')
 const ProcessorService = require('./services/ProcessorService')
 
-// Start kafka consumer
-logger.info('Starting kafka consumer')
 // create consumer
 const consumer = new Kafka.GroupConsumer(helper.getKafkaOptions())
 
