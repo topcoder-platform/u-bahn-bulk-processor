@@ -143,7 +143,8 @@ async function createUserAttributes (userId, record) {
   while (record[`attributeValue${i}`]) {
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
-    await helper.createUbahnRecord(`/users/${userId}/attributes`, { attributeId: attribute.id, value: record[`attributeValue${i}`] })
+    const value = _.toString(record[`attributeValue${i}`])
+    await helper.createUbahnRecord(`/users/${userId}/attributes`, { attributeId: attribute.id, value })
     i++
   }
 }

@@ -78,7 +78,10 @@ async function uploadFailedRecord (records, objectKey) {
 }
 
 /**
- * Function to data from ubahn api and check there is only one record
+ * Function to get data from ubahn api
+ * Call function ONLY IF you are sure that record indeed exists
+ * If more than one record exists, then it will attempt to return the one that matches param
+ * Else will throw error
  * @param {String} path api path
  * @param {Object} params query params
  * @param {Boolean} isOptionRecord whether the data can be empty
@@ -87,7 +90,7 @@ async function uploadFailedRecord (records, objectKey) {
 async function getUbahnSingleRecord (path, params, isOptionRecord) {
   const token = await getM2Mtoken()
 
-  logger.debug(`request ${config.UBAHN_API_URL}${path} by params: ${JSON.stringify(params)}`)
+  logger.debug(`request GET ${path} by params: ${JSON.stringify(params)}`)
   try {
     const res = await axios.get(`${config.UBAHN_API_URL}${path}`, { headers: { Authorization: `Bearer ${token}` }, params })
     if (res.data.length === 1) {
@@ -96,12 +99,20 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
     if (res.data.length === 0 && isOptionRecord) {
       return null
     }
+    if (res.data.length > 1) {
+      const record = _.find(res.data, params)
+
+      if (!record) {
+        throw Error('Multiple records returned. None exactly match query')
+      }
+
+      return record
+    }
   } catch (err) {
+    logger.error(`get ${path} by params: ${JSON.stringify(params)} failed`)
     logger.error(err)
     throw Error(`get ${path} by params: ${JSON.stringify(params)} failed`)
   }
-  logger.error(`get ${path} by params: ${JSON.stringify(params)} failed`)
-  throw Error(`get ${path} by params: ${JSON.stringify(params)} failed`)
 }
 
 /**
@@ -113,13 +124,13 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
 async function createUbahnRecord (path, data) {
   const token = await getM2Mtoken()
 
-  logger.debug(`request ${config.UBAHN_API_URL}${path} by data: ${JSON.stringify(data)}`)
+  logger.debug(`request POST ${path} with data: ${JSON.stringify(data)}`)
   try {
     const res = await axios.post(`${config.UBAHN_API_URL}${path}`, data, { headers: { Authorization: `Bearer ${token}` } })
     return res.data
   } catch (err) {
     logger.error(err)
-    throw Error(`post ${path} by data: ${JSON.stringify(data)} failed`)
+    throw Error(`post ${path} with data: ${JSON.stringify(data)} failed`)
   }
 }
 
@@ -132,13 +143,13 @@ async function createUserInTopcoder (user) {
   const requestBody = { param: user }
   const token = await getM2Mtoken()
 
-  logger.debug(`request ${url} by data: ${JSON.stringify(user)}`)
+  logger.debug(`request POST ${url} with data: ${JSON.stringify(user)}`)
   try {
     const res = await axios.post(`${url}`, requestBody, { headers: { Authorization: `Bearer ${token}` } })
     return res.data
   } catch (err) {
     logger.error(err)
-    throw Error(`post ${url} by data: ${JSON.stringify(user)} failed`)
+    throw Error(`post ${url} with data: ${JSON.stringify(user)} failed`)
   }
 }
 
