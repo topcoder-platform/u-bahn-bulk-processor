@@ -24,7 +24,7 @@ module.exports = {
 
   TOPCODER_USERS_API: process.env.TOPCODER_USERS_API || 'https://api.topcoder-dev.com/v3/users',
 
-  PROCESS_CONCURRENCY_COUNT: process.env.PROCESS_CONCURRENCY_COUNT || 25,
+  PROCESS_CONCURRENCY_COUNT: process.env.PROCESS_CONCURRENCY_COUNT ? parseInt(process.env.PROCESS_CONCURRENCY_COUNT, 10) : 25,
 
   // When a user is not found, should we proceed to create the user or treat it as error
   CREATE_MISSING_USER_FLAG: process.env.CREATE_MISSING_USER_FLAG === 'true',
