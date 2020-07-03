@@ -61,11 +61,11 @@ async function createUserInTopcoder (user) {
  * @param {Object} user The user to create
  */
 async function createUser (user) {
+  // Create the user in Topcoder
+  const topcoderUserId = await createUserInTopcoder(user)
+
   // Create the user in UBahn api
   const ubahnUserId = await createUserInUbahn(user)
-
-  // Create the user in Topcoder too
-  const topcoderUserId = await createUserInTopcoder(user)
 
   // Get the topcoder organization
   const topcoderOrg = await helper.getUbahnSingleRecord('/organizations', {
