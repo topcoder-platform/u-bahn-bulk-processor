@@ -100,6 +100,7 @@ async function uploadFailedRecord (records, objectKey) {
 async function getUbahnSingleRecord (path, params, isOptionRecord) {
   const token = await getUbahnM2Mtoken()
 
+  logger.debug(`Token is ${token}`)
   logger.debug(`request GET ${path} by params: ${JSON.stringify(params)}`)
   try {
     const res = await axios.get(`${config.UBAHN_API_URL}${path}`, { headers: { Authorization: `Bearer ${token}` }, params })
@@ -134,6 +135,7 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
 async function createUbahnRecord (path, data) {
   const token = await getUbahnM2Mtoken()
 
+  logger.debug(`Token is ${token}`)
   logger.debug(`request POST ${path} with data: ${JSON.stringify(data)}`)
   try {
     const res = await axios.post(`${config.UBAHN_API_URL}${path}`, data, { headers: { Authorization: `Bearer ${token}` } })
@@ -153,6 +155,7 @@ async function createUserInTopcoder (user) {
   const requestBody = { param: user }
   const token = await getTopcoderM2Mtoken()
 
+  logger.debug(`Token is ${token}`)
   logger.debug(`request POST ${url} with data: ${JSON.stringify(user)}`)
   try {
     const res = await axios.post(`${url}`, requestBody, { headers: { Authorization: `Bearer ${token}` } })
@@ -171,6 +174,7 @@ async function createUserInTopcoder (user) {
  */
 async function updateProcessStatus (id, data) {
   const token = await getUbahnM2Mtoken()
+  logger.debug(`Token is ${token}`)
   const res = await axios.patch(`${config.UBAHN_SEARCH_UI_API_URL}/uploads/${id}`, data, { headers: { Authorization: `Bearer ${token}` } })
   return res.data
 }
