@@ -30,7 +30,8 @@ The following parameters can be set in config files or in env variables:
 - CREATE_MISSING_USER_FLAG: Boolean flag, that when set, will create user if it is not found in Ubahn api. The user is created in both Ubahn and Topcoder's api(s)
 - PROCESS_CONCURRENCY_COUNT: The record process concurrency count, default value: 100
 - AUTH0_URL: The auth0 url, default value: 'https://topcoder-dev.auth0.com/oauth/token'
-- AUTH0_AUDIENCE: The auth0 audience, default value: 'https://m2m.topcoder-dev.com/'
+- AUTH0_UBAHN_AUDIENCE: The auth0 audience for accessing ubahn api(s), default value: 'https://u-bahn.topcoder-dev.com/'
+- AUTH0_TOPCODER_AUDIENCE: The auth0 audience for accessing ubahn api(s), default value: 'https://m2m.topcoder-dev.com/'
 - AUTH0_CLIENT_ID: The auth0 client id
 - AUTH0_CLIENT_SECRET: The auth0 client secret
 - AUTH0_PROXY_SERVER_URL: The auth0 proxy server url

@@ -12,13 +12,23 @@ const logger = require('./logger')
 AWS.config.region = config.get('AWS_REGION')
 const s3 = new AWS.S3()
 
-const m2m = m2mAuth(_.pick(config, ['AUTH0_URL', 'AUTH0_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL']))
+const ubahnM2M = m2mAuth(_.pick(config, ['AUTH0_URL', 'AUTH0_UBAHN_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL']))
+const topcoderM2M = m2mAuth(_.pick(config, ['AUTH0_URL', 'AUTH0_TOPCODER_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL']))
 
 /* Function to get M2M token
+ * (U-Bahn APIs only)
  * @returns {Promise}
  */
-async function getM2Mtoken () {
-  return m2m.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET)
+async function getUbahnM2Mtoken () {
+  return ubahnM2M.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET)
+}
+
+/* Function to get M2M token
+ * (Topcoder APIs only)
+ * @returns {Promise}
+ */
+async function getTopcoderM2Mtoken () {
+  return topcoderM2M.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET)
 }
 
 /**
@@ -88,7 +98,7 @@ async function uploadFailedRecord (records, objectKey) {
  * @returns {Promise} the record or null
  */
 async function getUbahnSingleRecord (path, params, isOptionRecord) {
-  const token = await getM2Mtoken()
+  const token = await getUbahnM2Mtoken()
 
   logger.debug(`request GET ${path} by params: ${JSON.stringify(params)}`)
   try {
@@ -122,7 +132,7 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
  * @returns {Promise} the created record
  */
 async function createUbahnRecord (path, data) {
-  const token = await getM2Mtoken()
+  const token = await getUbahnM2Mtoken()
 
   logger.debug(`request POST ${path} with data: ${JSON.stringify(data)}`)
   try {
@@ -141,7 +151,7 @@ async function createUbahnRecord (path, data) {
 async function createUserInTopcoder (user) {
   const url = config.TOPCODER_USERS_API
   const requestBody = { param: user }
-  const token = await getM2Mtoken()
+  const token = await getTopcoderM2Mtoken()
 
   logger.debug(`request POST ${url} with data: ${JSON.stringify(user)}`)
   try {
@@ -160,7 +170,7 @@ async function createUserInTopcoder (user) {
  * @returns {Promise} patch result data
  */
 async function updateProcessStatus (id, data) {
-  const token = await getM2Mtoken()
+  const token = await getUbahnM2Mtoken()
   const res = await axios.patch(`${config.UBAHN_SEARCH_UI_API_URL}/uploads/${id}`, data, { headers: { Authorization: `Bearer ${token}` } })
   return res.data
 }
