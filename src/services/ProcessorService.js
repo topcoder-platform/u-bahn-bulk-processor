@@ -13,6 +13,7 @@ const helper = require('../common/helper')
  * @param {Object} param0 The user details
  */
 async function createUserInUbahn ({ handle, firstName, lastName }) {
+  logger.debug(`Creating user with handle ${handle} in Ubahn`)
   const user = await helper.createUbahnRecord('/users', {
     handle,
     firstName,
@@ -28,6 +29,7 @@ async function createUserInUbahn ({ handle, firstName, lastName }) {
  */
 async function createUserInTopcoder (user) {
   const { handle, firstName, lastName, email, countryName, providerType, provider, userId } = user
+  logger.debug(`Creating user with handle ${handle} in Topcoder`)
 
   const topcoderUser = {
     handle,
@@ -65,14 +67,14 @@ async function createUser (user) {
   // Create the user in Topcoder too
   const topcoderUserId = await createUserInTopcoder(user)
 
-  // Get the topcoder organization id
-  const topcoderOrgId = await helper.getUbahnSingleRecord('/organizations', {
+  // Get the topcoder organization
+  const topcoderOrg = await helper.getUbahnSingleRecord('/organizations', {
     name: config.TOPCODER_ORGANIZATION_NAME
   })
 
   // Now, proceed to map the topcoder user id with the ubahn user id
   await helper.createUbahnRecord(`/users/${ubahnUserId}/externalProfiles`, {
-    organizationId: topcoderOrgId,
+    organizationId: topcoderOrg.id,
     externalId: topcoderUserId
   })
 
