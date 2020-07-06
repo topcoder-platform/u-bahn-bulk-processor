@@ -116,6 +116,9 @@ async function getUserId (user) {
 async function createUserSkill (userId, skillProviderName, skillName, certifierId, certifiedDate, metricValue) {
   if ((!skillProviderName || !skillName) && (certifierId || certifiedDate || metricValue)) {
     throw Error(`Skill provider or skill name is missing for user with id ${userId} `)
+  } else if (!skillProviderName || !skillName) {
+    // Empty values. Ignore.
+    return
   }
   const skillProvider = await helper.getUbahnSingleRecord('/skillsProviders', { name: skillProviderName })
   const skill = await helper.getUbahnSingleRecord('/skills', { skillProviderId: skillProvider.id, name: skillName })
@@ -135,6 +138,9 @@ async function createUserSkill (userId, skillProviderName, skillName, certifierI
 async function createAchievement (userId, providerName, certifierId, certifiedDate, name, uri) {
   if (!providerName && (certifierId || certifiedDate || name || uri)) {
     throw Error(`Achievement provider name is missing for user with id ${userId}`)
+  } else if (!providerName) {
+    // Empty values. Ignore.
+    return
   }
   const achievementsProvider = await helper.getUbahnSingleRecord('/achievementsProviders', { name: providerName })
   await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
@@ -151,6 +157,9 @@ async function createUserAttributes (userId, record) {
   while (record[`attributeValue${i}`]) {
     if ((!record[`attributeGroupName${i}`] || !record[`attributeName${i}`]) && record[`attributeValue${i}`]) {
       throw Error(`Attribute group name or attribute name is missing for user with id ${userId} and with attribute value ${record[`attributeValue${i}`]}`)
+    } else if (!record[`attributeGroupName${i}`] || !record[`attributeName${i}`]) {
+      // Empty values. Ignore.
+      return
     }
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
