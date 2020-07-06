@@ -148,6 +148,25 @@ async function createUbahnRecord (path, data) {
 }
 
 /**
+ * Function to patch data to ubahn api to update ubahn record
+ * @param {String} path api path
+ * @param {Object} data request body
+ * @returns {Promise} the updated record
+ */
+async function updateUBahnRecord (path, data) {
+  const token = await getUbahnM2Mtoken()
+
+  logger.debug(`request PATCH ${path} with data: ${JSON.stringify(data)}`)
+  try {
+    const res = await axios.patch(`${config.UBAHN_API_URL}${path}`, data, { headers: { Authorization: `Bearer ${token}` } })
+    return res.data
+  } catch (err) {
+    logger.error(err)
+    throw Error(`patch ${path} with data: ${JSON.stringify(data)} failed`)
+  }
+}
+
+/**
  * Creates user in Topcoder (sso user)
  * @param {Object} user The user to create
  */
@@ -226,6 +245,7 @@ module.exports = {
   parseExcel,
   getUbahnSingleRecord,
   createUbahnRecord,
+  updateUBahnRecord,
   createUserInTopcoder,
   updateProcessStatus,
   uploadFailedRecord

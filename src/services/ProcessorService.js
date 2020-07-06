@@ -122,7 +122,15 @@ async function createUserSkill (userId, skillProviderName, skillName, certifierI
   }
   const skillProvider = await helper.getUbahnSingleRecord('/skillsProviders', { name: skillProviderName })
   const skill = await helper.getUbahnSingleRecord('/skills', { skillProviderId: skillProvider.id, name: skillName })
-  await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue, skillId: skill.id })
+
+  // Does the skill already exist on the user?
+  const existingSkill = await helper.getUbahnSingleRecord(`/users/${userId}/skills/${skill.id}`, {}, true)
+
+  if (!existingSkill) {
+    await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue, skillId: skill.id })
+  } else {
+    await helper.updateUBahnRecord(`/users/${userId}/skills/${skill.id}`, { certifierId, certifiedDate, metricValue })
+  }
 }
 
 /**
@@ -143,7 +151,13 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
     return
   }
   const achievementsProvider = await helper.getUbahnSingleRecord('/achievementsProviders', { name: providerName })
-  await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
+  const existingAchievement = await helper.getUbahnSingleRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, {}, true)
+
+  if (!existingAchievement) {
+    await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
+  } else {
+    await helper.updateUBahnRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, { certifierId, certifiedDate, name, uri })
+  }
 }
 
 /**
@@ -164,7 +178,14 @@ async function createUserAttributes (userId, record) {
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
     const value = _.toString(record[`attributeValue${i}`])
-    await helper.createUbahnRecord(`/users/${userId}/attributes`, { attributeId: attribute.id, value })
+
+    const existingAttribute = await helper.getUbahnSingleRecord(`/users/${userId}/attributes/${attribute.id}`, {}, true)
+
+    if (!existingAttribute) {
+      await helper.createUbahnRecord(`/users/${userId}/attributes`, { attributeId: attribute.id, value })
+    } else {
+      await helper.updateUBahnRecord(`/users/${userId}/attributes/${attribute.id}`, { value })
+    }
     i++
   }
 }
