@@ -106,20 +106,24 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
   logger.debug(`request GET ${path} by params: ${JSON.stringify(params)}`)
   try {
     const res = await axios.get(`${config.UBAHN_API_URL}${path}`, { headers: { Authorization: `Bearer ${token}` }, params })
-    if (res.data.length === 1) {
-      return res.data[0]
-    }
-    if (res.data.length === 0 && isOptionRecord) {
-      return null
-    }
-    if (res.data.length > 1) {
-      const record = _.find(res.data, params)
-
-      if (!record) {
-        throw Error('Multiple records returned. None exactly match query')
+    if (_.isArray(res.data)) {
+      if (res.data.length === 1) {
+        return res.data[0]
       }
+      if (res.data.length === 0 && isOptionRecord) {
+        return null
+      }
+      if (res.data.length > 1) {
+        const record = _.find(res.data, params)
 
-      return record
+        if (!record) {
+          throw Error('Multiple records returned. None exactly match query')
+        }
+
+        return record
+      }
+    } else {
+      return res.data
     }
   } catch (err) {
     logger.error(`get ${path} by params: ${JSON.stringify(params)} failed`)
