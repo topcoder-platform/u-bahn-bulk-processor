@@ -194,7 +194,10 @@ function parseExcel (file) {
   const resultData = []
   const header = []
   for (let i = colStart; i <= colEnd; i++) {
-    header[i - colStart] = ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`].v
+    // Verify that the header cell has value, if it is empty, skil that entire column
+    if (ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`]) {
+      header[i - colStart] = ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`].v
+    }
   }
 
   if (!header.includes('handle')) {
