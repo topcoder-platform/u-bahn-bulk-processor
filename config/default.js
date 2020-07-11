@@ -33,7 +33,7 @@ module.exports = {
   TOPCODER_ORGANIZATION_NAME: process.env.TOPCODER_ORGANIZATION_NAME || 'topcoder',
 
   AUTH0_URL: process.env.AUTH0_URL || 'https://topcoder-dev.auth0.com/oauth/token', // Auth0 credentials
-  AUTH0_UBAHN_AUDIENCE: process.env.AUTH0_UBAHN_AUDIENCE || 'https://u-bahn.topcoder-dev.com/',
+  AUTH0_UBAHN_AUDIENCE: process.env.AUTH0_UBAHN_AUDIENCE || 'https://u-bahn.topcoder.com/',
   AUTH0_TOPCODER_AUDIENCE: process.env.AUTH0_TOPCODER_AUDIENCE || 'https://m2m.topcoder-dev.com/',
   TOKEN_CACHE_TIME: process.env.TOKEN_CACHE_TIME,
   AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
