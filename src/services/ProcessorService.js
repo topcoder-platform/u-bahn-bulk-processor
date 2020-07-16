@@ -126,7 +126,7 @@ async function createUserSkill (userId, skillProviderName, skillName, certifierI
   // Does the skill already exist on the user?
   const existingSkill = await helper.getUbahnSingleRecord(`/users/${userId}/skills/${skill.id}`, {}, true)
 
-  if (!existingSkill) {
+  if (!existingSkill || !existingSkill.id) {
     await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue, skillId: skill.id })
   } else {
     await helper.updateUBahnRecord(`/users/${userId}/skills/${skill.id}`, { certifierId, certifiedDate, metricValue })
@@ -153,7 +153,7 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
   const achievementsProvider = await helper.getUbahnSingleRecord('/achievementsProviders', { name: providerName })
   const existingAchievement = await helper.getUbahnSingleRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, {}, true)
 
-  if (!existingAchievement) {
+  if (!existingAchievement || !existingAchievement.id) {
     await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
   } else {
     await helper.updateUBahnRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, { certifierId, certifiedDate, name, uri })
@@ -181,7 +181,7 @@ async function createUserAttributes (userId, record) {
 
     const existingAttribute = await helper.getUbahnSingleRecord(`/users/${userId}/attributes/${attribute.id}`, {}, true)
 
-    if (!existingAttribute) {
+    if (!existingAttribute || !existingAttribute.id) {
       await helper.createUbahnRecord(`/users/${userId}/attributes`, { attributeId: attribute.id, value })
     } else {
       await helper.updateUBahnRecord(`/users/${userId}/attributes/${attribute.id}`, { value })
