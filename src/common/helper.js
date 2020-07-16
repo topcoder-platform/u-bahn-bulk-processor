@@ -115,7 +115,7 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
           return true
         }
 
-        return false
+        return status >= 200 && status < 300
       }
     })
     if (_.isArray(res.data)) {
