@@ -42,6 +42,12 @@ const dataHandler = (messageSet, topic, partition) => Promise.each(messageSet, a
     return
   }
 
+  if (messageJSON.payload.resource !== 'upload') {
+    logger.info(`The message payload resource ${messageJSON.payload.resource} is not "upload". Ignoring message.`)
+
+    return
+  }
+
   try {
     await ProcessorService.processCreate(messageJSON)
 

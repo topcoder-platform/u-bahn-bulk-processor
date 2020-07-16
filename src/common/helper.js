@@ -105,7 +105,19 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
 
   logger.debug(`request GET ${path} by params: ${JSON.stringify(params)}`)
   try {
-    const res = await axios.get(`${config.UBAHN_API_URL}${path}`, { headers: { Authorization: `Bearer ${token}` }, params })
+    const res = await axios.get(`${config.UBAHN_API_URL}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params,
+      validateStatus: (status) => {
+        if (isOptionRecord && status === 404) {
+          // If record is not found, it is not an error in scenario where we are checking
+          // if record exists or not
+          return true
+        }
+
+        return false
+      }
+    })
     if (_.isArray(res.data)) {
       if (res.data.length === 1) {
         return res.data[0]
