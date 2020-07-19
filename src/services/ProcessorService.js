@@ -59,22 +59,18 @@ async function createUserInTopcoder (user) {
 /**
  * Creates the user in UBahn api as well as Topcoder's Users api
  * @param {Object} user The user to create
+ * @param {String} organizationId The org id to associate the new user with
  */
-async function createUser (user) {
+async function createUser (user, organizationId) {
   // Create the user in Topcoder
   const topcoderUserId = await createUserInTopcoder(user)
 
   // Create the user in UBahn api
   const ubahnUserId = await createUserInUbahn(user)
 
-  // Get the topcoder organization
-  const topcoderOrg = await helper.getUbahnSingleRecord('/organizations', {
-    name: config.TOPCODER_ORGANIZATION_NAME
-  })
-
   // Now, proceed to map the topcoder user id with the ubahn user id
   await helper.createUbahnRecord(`/users/${ubahnUserId}/externalProfiles`, {
-    organizationId: topcoderOrg.id,
+    organizationId,
     externalId: topcoderUserId
   })
 
@@ -85,9 +81,10 @@ async function createUser (user) {
 /**
  * Function to get user id
  * @param {Object} user
+ * @param {Object} organizationId The org id to associate a new user with
  * @returns {Promise}
  */
-async function getUserId (user) {
+async function getUserId (user, organizationId) {
   const record = await helper.getUbahnSingleRecord('/users', {
     handle: user.handle
   }, true)
@@ -97,7 +94,7 @@ async function getUserId (user) {
 
   // No user found. Should we create the user or treat it as an error?
   if (config.CREATE_MISSING_USER_FLAG) {
-    return createUser(user)
+    return createUser(user, organizationId)
   } else {
     throw new Error(`Could not find user with handle ${user.handle}`)
   }
@@ -194,11 +191,12 @@ async function createUserAttributes (userId, record) {
  * Function to process record
  * @param {Object} record
  * @param {Array} failedRecord then failed records container
+ * @param {String} organizationId The org id to associate a new user with
  * @returns {Promise}
  */
-async function processCreateRecord (record, failedRecord) {
+async function processCreateRecord (record, failedRecord, organizationId) {
   try {
-    const userId = await getUserId(record)
+    const userId = await getUserId(record, organizationId)
     await createUserSkill(userId, record.skillProviderName, record.skillName, record.skillCertifierId, record.skillCertifiedDate, record.metricValue)
     await createAchievement(userId, record.achievementsProviderName, record.achievementsCertifierId, record.achievementsCertifiedDate, record.achievementsName, record.achievementsUri)
     await createUserAttributes(userId, record)
@@ -221,7 +219,7 @@ async function processCreate (message) {
       const records = helper.parseExcel(file)
       const failedRecord = []
 
-      await Promise.map(records, record => processCreateRecord(record, failedRecord), { concurrency: config.PROCESS_CONCURRENCY_COUNT })
+      await Promise.map(records, record => processCreateRecord(record, failedRecord, message.payload.organizationId), { concurrency: config.PROCESS_CONCURRENCY_COUNT })
 
       if (failedRecord.length > 0) {
         await helper.uploadFailedRecord(failedRecord, message.payload.objectKey)
@@ -247,6 +245,7 @@ processCreate.schema = {
       resource: Joi.string().required(),
       objectKey: Joi.string().required(),
       status: Joi.string().required(),
+      organizationId: Joi.string().required(),
       id: Joi.id()
     }).required().unknown(true)
   }).required()
