@@ -3,7 +3,6 @@
  */
 const _ = require('lodash')
 const AWS = require('aws-sdk')
-const AmazonS3URI = require('amazon-s3-uri')
 const XLSX = require('xlsx')
 const axios = require('axios')
 const config = require('config')
@@ -13,13 +12,26 @@ const logger = require('./logger')
 AWS.config.region = config.get('AWS_REGION')
 const s3 = new AWS.S3()
 
-const m2m = m2mAuth(_.pick(config, ['AUTH0_URL', 'AUTH0_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL']))
+const ubahnM2MConfig = _.pick(config, ['AUTH0_URL', 'AUTH0_UBAHN_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL'])
+const topcoderM2MConfig = _.pick(config, ['AUTH0_URL', 'AUTH0_TOPCODER_AUDIENCE', 'TOKEN_CACHE_TIME', 'AUTH0_PROXY_SERVER_URL'])
+
+const ubahnM2M = m2mAuth({ ...ubahnM2MConfig, AUTH0_AUDIENCE: ubahnM2MConfig.AUTH0_UBAHN_AUDIENCE })
+const topcoderM2M = m2mAuth({ ...topcoderM2MConfig, AUTH0_AUDIENCE: topcoderM2MConfig.AUTH0_TOPCODER_AUDIENCE })
 
 /* Function to get M2M token
+ * (U-Bahn APIs only)
  * @returns {Promise}
  */
-async function getM2Mtoken () {
-  return m2m.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET)
+async function getUbahnM2Mtoken () {
+  return ubahnM2M.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET)
+}
+
+/* Function to get M2M token
+ * (Topcoder APIs only)
+ * @returns {Promise}
+ */
+async function getTopcoderM2Mtoken () {
+  return topcoderM2M.getMachineToken(config.AUTH0_CLIENT_ID, config.AUTH0_CLIENT_SECRET)
 }
 
 /**
@@ -36,26 +48,27 @@ function getKafkaOptions () {
 
 /**
  * Function to download file from given S3 URL
- * @param{String} fileURL S3 URL of the file to be downloaded
+ * @param {String} objectKey S3 object key of the file to be downloaded
  * @returns {Buffer} Buffer of downloaded file
  */
-async function downloadFile (fileURL) {
-  const { bucket, key } = AmazonS3URI(fileURL)
-  logger.info(`downloadFile(): file is on S3 ${bucket} / ${key}`)
-  const downloadedFile = await s3.getObject({ Bucket: bucket, Key: key }).promise()
+async function downloadFile (objectKey) {
+  const downloadedFile = await s3.getObject({
+    Bucket: config.S3_UPLOAD_RECORD_BUCKET,
+    Key: objectKey
+  }).promise()
+
   return downloadedFile.Body
 }
 
 /**
  * Function to upload error records file to S3
  * @param {Array} records error records
- * @param {String} sourceFileURL source file url for source s3 key
+ * @param {String} objectKey source file s3 object key
  * @returns {Promise}
  */
-async function uploadFailedRecord (records, sourceFileURL) {
-  const sourceName = AmazonS3URI(sourceFileURL).key
-  const extIndex = sourceName.lastIndexOf('.')
-  const errFileName = `${sourceName.substring(0, extIndex)}_errors_${Date.now()}${sourceName.substring(extIndex)}`
+async function uploadFailedRecord (records, objectKey) {
+  const extIndex = objectKey.lastIndexOf('.')
+  const errFileName = `${objectKey.substring(0, extIndex)}_errors_${Date.now()}${objectKey.substring(extIndex)}`
   // new workbook
   const wb = XLSX.utils.book_new()
   const wsData = []
@@ -66,34 +79,69 @@ async function uploadFailedRecord (records, sourceFileURL) {
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
   logger.info(`upload failed records to s3 by key: ${errFileName}`)
-  await s3.upload({ Bucket: config.S3_FAILED_RECORD_BUCKET, Key: errFileName, Body: XLSX.write(wb, { type: 'buffer' }) }).promise()
+  await s3.upload({
+    Bucket: config.S3_FAILED_RECORD_BUCKET,
+    Key: errFileName,
+    Body: XLSX.write(wb, { type: 'buffer' }),
+    ContentType: 'application/vnd.ms-excel',
+    Metadata: {
+      originalname: objectKey
+    }
+  }).promise()
 }
 
 /**
- * Function to data from ubahn api and check there is only one record
+ * Function to get data from ubahn api
+ * Call function ONLY IF you are sure that record indeed exists
+ * If more than one record exists, then it will attempt to return the one that matches param
+ * Else will throw error
  * @param {String} path api path
  * @param {Object} params query params
  * @param {Boolean} isOptionRecord whether the data can be empty
  * @returns {Promise} the record or null
  */
 async function getUbahnSingleRecord (path, params, isOptionRecord) {
-  const token = await getM2Mtoken()
+  const token = await getUbahnM2Mtoken()
 
-  logger.debug(`request ${config.UBAHN_API_URL}${path} by params: ${JSON.stringify(params)}`)
+  logger.debug(`request GET ${path} by params: ${JSON.stringify(params)}`)
   try {
-    const res = await axios.get(`${config.UBAHN_API_URL}${path}`, { headers: { Authorization: `Bearer ${token}` }, params })
-    if (res.data.length === 1) {
-      return res.data[0]
-    }
-    if (res.data.length === 0 && isOptionRecord) {
-      return null
+    const res = await axios.get(`${config.UBAHN_API_URL}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params,
+      validateStatus: (status) => {
+        if (isOptionRecord && status === 404) {
+          // If record is not found, it is not an error in scenario where we are checking
+          // if record exists or not
+          return true
+        }
+
+        return status >= 200 && status < 300
+      }
+    })
+    if (_.isArray(res.data)) {
+      if (res.data.length === 1) {
+        return res.data[0]
+      }
+      if (res.data.length === 0 && isOptionRecord) {
+        return null
+      }
+      if (res.data.length > 1) {
+        const record = _.find(res.data, params)
+
+        if (!record) {
+          throw Error('Multiple records returned. None exactly match query')
+        }
+
+        return record
+      }
+    } else {
+      return res.data
     }
   } catch (err) {
+    logger.error(`get ${path} by params: ${JSON.stringify(params)} failed`)
     logger.error(err)
-    throw Error(`get ${path} by params: ${JSON.stringify(params)} fail`)
+    throw Error(`get ${path} by params: ${JSON.stringify(params)} failed`)
   }
-  logger.error(`get ${path} by params: ${JSON.stringify(params)} fail`)
-  throw Error(`get ${path} by params: ${JSON.stringify(params)} fail`)
 }
 
 /**
@@ -103,15 +151,53 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
  * @returns {Promise} the created record
  */
 async function createUbahnRecord (path, data) {
-  const token = await getM2Mtoken()
+  const token = await getUbahnM2Mtoken()
 
-  logger.debug(`request ${config.UBAHN_API_URL}${path} by data: ${JSON.stringify(data)}`)
+  logger.debug(`request POST ${path} with data: ${JSON.stringify(data)}`)
   try {
     const res = await axios.post(`${config.UBAHN_API_URL}${path}`, data, { headers: { Authorization: `Bearer ${token}` } })
     return res.data
   } catch (err) {
     logger.error(err)
-    throw Error(`post ${path} by data: ${JSON.stringify(data)} fail`)
+    throw Error(`post ${path} with data: ${JSON.stringify(data)} failed`)
+  }
+}
+
+/**
+ * Function to patch data to ubahn api to update ubahn record
+ * @param {String} path api path
+ * @param {Object} data request body
+ * @returns {Promise} the updated record
+ */
+async function updateUBahnRecord (path, data) {
+  const token = await getUbahnM2Mtoken()
+
+  logger.debug(`request PATCH ${path} with data: ${JSON.stringify(data)}`)
+  try {
+    const res = await axios.patch(`${config.UBAHN_API_URL}${path}`, data, { headers: { Authorization: `Bearer ${token}` } })
+    return res.data
+  } catch (err) {
+    logger.error(err)
+    throw Error(`patch ${path} with data: ${JSON.stringify(data)} failed`)
+  }
+}
+
+/**
+ * Creates user in Topcoder (sso user)
+ * @param {Object} user The user to create
+ */
+async function createUserInTopcoder (user) {
+  const url = config.TOPCODER_USERS_API
+  const requestBody = { param: user }
+  const token = await getTopcoderM2Mtoken()
+
+  logger.debug(`request POST ${url} with data: ${JSON.stringify(user)}`)
+  try {
+    const res = await axios.post(`${url}`, requestBody, { headers: { Authorization: `Bearer ${token}` } })
+    return res.data
+  } catch (err) {
+    logger.error(err)
+    throw Error(`post ${url} with data: ${JSON.stringify(user)} failed`)
   }
 }
 
@@ -122,7 +208,7 @@ async function createUbahnRecord (path, data) {
  * @returns {Promise} patch result data
  */
 async function updateProcessStatus (id, data) {
-  const token = await getM2Mtoken()
+  const token = await getUbahnM2Mtoken()
   const res = await axios.patch(`${config.UBAHN_SEARCH_UI_API_URL}/uploads/${id}`, data, { headers: { Authorization: `Bearer ${token}` } })
   return res.data
 }
@@ -143,14 +229,15 @@ function parseExcel (file) {
   const resultData = []
   const header = []
   for (let i = colStart; i <= colEnd; i++) {
-    header[i - colStart] = ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`].v
+    // Verify that the header cell has value, if it is empty, skil that entire column
+    if (ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`]) {
+      header[i - colStart] = ws[`${XLSX.utils.encode_col(i)}${XLSX.utils.encode_row(rowStart)}`].v
+    }
   }
-  const requireHeader = ['handle', 'skillName', 'skillProviderName', 'metricValue', 'skillCertifierId', 'skillCertifiedDate', 'achievementsProviderName',
-    'achievementsName', 'achievementsUri', 'achievementsCertifierId', 'achievementsCertifiedDate']
-  // check excel content
-  if (!requireHeader.every(v => header.includes(v))) {
-    logger.error(`require ${JSON.stringify(requireHeader)} columns, but actual columns is ${JSON.stringify(header)}`)
-    throw Error(`require ${JSON.stringify(requireHeader)} columns, but actual columns is ${JSON.stringify(header)}`)
+
+  if (!header.includes('handle')) {
+    logger.error('"handle" column is missing. Cannot process the rows. Aborting.')
+    throw Error('"handle" column is missing. Cannot process the rows. Aborting.')
   }
   for (let i = rowStart + 1; i <= rowEnd; i++) {
     const rowData = {}
@@ -164,7 +251,7 @@ function parseExcel (file) {
       resultData.push(rowData)
     }
   }
-  logger.info(`parseing excel file finish, the record count is ${resultData.length}`)
+  logger.info(`parsing excel file finish, the record count is ${resultData.length}`)
   return resultData
 }
 
@@ -174,6 +261,8 @@ module.exports = {
   parseExcel,
   getUbahnSingleRecord,
   createUbahnRecord,
+  updateUBahnRecord,
+  createUserInTopcoder,
   updateProcessStatus,
   uploadFailedRecord
 }

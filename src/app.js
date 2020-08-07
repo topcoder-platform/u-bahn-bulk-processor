@@ -10,8 +10,6 @@ const logger = require('./common/logger')
 const helper = require('./common/helper')
 const ProcessorService = require('./services/ProcessorService')
 
-// Start kafka consumer
-logger.info('Starting kafka consumer')
 // create consumer
 const consumer = new Kafka.GroupConsumer(helper.getKafkaOptions())
 
@@ -41,6 +39,12 @@ const dataHandler = (messageSet, topic, partition) => Promise.each(messageSet, a
 
     // commit the message and ignore it
     await consumer.commitOffset({ topic, partition, offset: m.offset })
+    return
+  }
+
+  if (messageJSON.payload.resource !== 'upload') {
+    logger.info(`The message payload resource ${messageJSON.payload.resource} is not "upload". Ignoring message.`)
+
     return
   }
 
