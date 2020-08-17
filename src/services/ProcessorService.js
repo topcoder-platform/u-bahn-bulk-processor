@@ -24,6 +24,7 @@ async function createUserInUbahn ({ handle, firstName, lastName }) {
 
     return user.id
   } catch (error) {
+    logger.error('An error occurred creating the user in ubahn')
     logger.error(error)
     // Throw it to fail processing of this record
     throw error
@@ -62,6 +63,7 @@ async function createUserInTopcoder (user) {
     const newUser = await helper.createUserInTopcoder(topcoderUser)
     return newUser.result.content.id
   } catch (error) {
+    logger.error('An error occurred creating the user in topcoder')
     logger.error(error)
     // Throw it to fail processing of this record
     throw error
