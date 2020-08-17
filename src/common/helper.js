@@ -151,7 +151,14 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
  * @returns {Promise} the created record
  */
 async function createUbahnRecord (path, data) {
-  const token = await getUbahnM2Mtoken()
+  let token
+  try {
+    token = await getUbahnM2Mtoken()
+  } catch (error) {
+    logger.error('An error occurred fetching the m2m token for UBahn APIs')
+    logger.error(error)
+    throw error
+  }
 
   logger.debug(`request POST ${path} with data: ${JSON.stringify(data)}`)
   try {
@@ -189,7 +196,14 @@ async function updateUBahnRecord (path, data) {
 async function createUserInTopcoder (user) {
   const url = config.TOPCODER_USERS_API
   const requestBody = { param: user }
-  const token = await getTopcoderM2Mtoken()
+  let token
+  try {
+    token = await getTopcoderM2Mtoken()
+  } catch (error) {
+    logger.error('An error occurred fetching the m2m token for Topcoder APIs')
+    logger.error(error)
+    throw error
+  }
 
   logger.debug(`request POST ${url} with data: ${JSON.stringify(user)}`)
   try {
