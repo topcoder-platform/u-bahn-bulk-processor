@@ -14,13 +14,20 @@ const helper = require('../common/helper')
  */
 async function createUserInUbahn ({ handle, firstName, lastName }) {
   logger.debug(`Creating user with handle ${handle} in Ubahn`)
-  const user = await helper.createUbahnRecord('/users', {
-    handle,
-    firstName,
-    lastName
-  })
 
-  return user.id
+  try {
+    const user = await helper.createUbahnRecord('/users', {
+      handle,
+      firstName,
+      lastName
+    })
+
+    return user.id
+  } catch (error) {
+    logger.error(error)
+    // Throw it to fail processing of this record
+    throw error
+  }
 }
 
 /**
@@ -50,10 +57,15 @@ async function createUserInTopcoder (user) {
     }
   }
 
-  // Create the user in topcoder's Users api
-  const newUser = await helper.createUserInTopcoder(topcoderUser)
-
-  return newUser.result.content.id
+  try {
+    // Create the user in topcoder's Users api
+    const newUser = await helper.createUserInTopcoder(topcoderUser)
+    return newUser.result.content.id
+  } catch (error) {
+    logger.error(error)
+    // Throw it to fail processing of this record
+    throw error
+  }
 }
 
 /**
