@@ -190,6 +190,34 @@ async function updateUBahnRecord (path, data) {
 }
 
 /**
+ * Returns the user in Topcoder identified by the handle
+ * @param {String} handle The user handle
+ */
+async function getUserInTopcoder (handle) {
+  const url = config.TOPCODER_USERS_API
+  const params = { filter: `handle=${handle}` }
+  let token
+
+  try {
+    token = await getTopcoderM2Mtoken()
+  } catch (error) {
+    logger.error('An error occurred fetching the m2m token for Topcoder APIs')
+    logger.error(error)
+    throw error
+  }
+
+  logger.debug(`request GET ${url} with params: ${JSON.stringify(params)}`)
+
+  try {
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` }, params })
+    return res.data
+  } catch (err) {
+    logger.error(err)
+    throw Error(`get ${url} with params: ${JSON.stringify(params)} failed`)
+  }
+}
+
+/**
  * Creates user in Topcoder (sso user)
  * @param {Object} user The user to create
  */
@@ -207,7 +235,7 @@ async function createUserInTopcoder (user) {
 
   logger.debug(`request POST ${url} with data: ${JSON.stringify(user)}`)
   try {
-    const res = await axios.post(`${url}`, requestBody, { headers: { Authorization: `Bearer ${token}` } })
+    const res = await axios.post(url, requestBody, { headers: { Authorization: `Bearer ${token}` } })
     return res.data
   } catch (err) {
     logger.error(err)
@@ -276,6 +304,7 @@ module.exports = {
   getUbahnSingleRecord,
   createUbahnRecord,
   updateUBahnRecord,
+  getUserInTopcoder,
   createUserInTopcoder,
   updateProcessStatus,
   uploadFailedRecord
