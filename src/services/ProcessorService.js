@@ -76,8 +76,20 @@ async function createUserInTopcoder (user) {
  * @param {String} organizationId The org id to associate the new user with
  */
 async function createUser (user, organizationId) {
-  // Create the user in Topcoder
-  const topcoderUserId = await createUserInTopcoder(user)
+  let topcoderUserId
+  // Check if the user exists in Topcoder
+  const res = await helper.getUserInTopcoder(user.handle)
+
+  const topcoderUser = res.result.content.find(u => u.handle === user.handle)
+
+  if (!topcoderUser) {
+    logger.debug(`User with handle ${user.handle} not found in Topcoder. Creating it...`)
+    // Create the user in Topcoder
+    topcoderUserId = await createUserInTopcoder(user)
+  } else {
+    logger.debug(`User with handle ${user.handle} found in Topcoder. Not creating it again...`)
+    topcoderUserId = topcoderUser.id
+  }
 
   // Create the user in UBahn api
   const ubahnUserId = await createUserInUbahn(user)
