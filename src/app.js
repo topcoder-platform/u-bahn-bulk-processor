@@ -9,9 +9,25 @@ const healthcheck = require('topcoder-healthcheck-dropin')
 const logger = require('./common/logger')
 const helper = require('./common/helper')
 const ProcessorService = require('./services/ProcessorService')
+const Mutex = require('async-mutex').Mutex
+
+let count = 0
+let mutex = new Mutex()
 
 // create consumer
 const consumer = new Kafka.GroupConsumer(helper.getKafkaOptions())
+
+async function getLatestCount() {
+  const release = await mutex.acquire()
+
+  try {
+    count = count + 1
+
+    return count
+  } finally {
+    release()
+  }
+}
 
 /*
  * Data handler linked with Kafka consumer
@@ -48,14 +64,19 @@ const dataHandler = (messageSet, topic, partition) => Promise.each(messageSet, a
     return
   }
 
+  let messageCount = await getLatestCount()
+
+  logger.debug(`Current message count: ${messageCount}`)
+
   try {
     await ProcessorService.processCreate(messageJSON)
 
-    logger.debug('Successfully processed message')
+    logger.debug(`Successfully processed message with count ${messageCount}`)
   } catch (err) {
     logger.logFullError(err)
   } finally {
     // Commit offset regardless of error
+    logger.debug(`Commiting offset after processing message with count ${messageCount}`)
     await consumer.commitOffset({ topic, partition, offset: m.offset })
   }
 })
