@@ -204,7 +204,7 @@ async function createUserAttributes (userId, record) {
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
     const value = _.toString(record[`attributeValue${i}`])
-    logger.debug(`*** createUserAttributes: attribute/value = ${value}`)
+    logger.debug(`*** createUserAttributes: attribute/value = ${attribute}/${value}`)
 
     const existingAttribute = await helper.getUbahnSingleRecord(`/users/${userId}/attributes/${attribute.id}`, {}, true)
 
