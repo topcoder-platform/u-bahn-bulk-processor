@@ -191,7 +191,10 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
  */
 async function createUserAttributes (userId, record) {
   let i = 1
+  logger.debug(`*** createUserAttributes('${userId}','${record}')`)
   while (record[`attributeValue${i}`]) {
+    logger.debug(`*** createUserAttributes: record number${i}`)
+
     if ((!record[`attributeGroupName${i}`] || !record[`attributeName${i}`]) && record[`attributeValue${i}`]) {
       throw Error(`Attribute group name or attribute name is missing for user with id ${userId} and with attribute value ${record[`attributeValue${i}`]}`)
     } else if (!record[`attributeGroupName${i}`] || !record[`attributeName${i}`]) {
@@ -201,6 +204,7 @@ async function createUserAttributes (userId, record) {
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
     const value = _.toString(record[`attributeValue${i}`])
+    logger.debug(`*** createUserAttributes: attribute/value = ${value}`)
 
     const existingAttribute = await helper.getUbahnSingleRecord(`/users/${userId}/attributes/${attribute.id}`, {}, true)
 
