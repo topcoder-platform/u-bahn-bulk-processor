@@ -191,7 +191,6 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
  */
 async function createUserAttributes (userId, record) {
   let i = 1
-  logger.debug(`*** createUserAttributes('${userId}','${JSON.stringify(record, null, 4)}')`)
   while (record[`attributeValue${i}`]) {
     logger.debug(`*** createUserAttributes: record number${i}`)
 
@@ -204,8 +203,6 @@ async function createUserAttributes (userId, record) {
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
     const value = _.toString(record[`attributeValue${i}`])
-    logger.debug(`*** createUserAttributes: attribute/value = ${JSON.stringify(attribute)}/${value}`)
-
     const existingAttribute = await helper.getUbahnSingleRecord(`/users/${userId}/attributes/${attribute.id}`, {}, true)
 
     if (!existingAttribute || !existingAttribute.id) {
@@ -248,8 +245,6 @@ async function processCreate (message) {
     try {
       const file = await helper.downloadFile(message.payload.objectKey)
       const records = helper.parseExcel(file)
-      logger.info('Extracted records below:')
-      logger.info(JSON.stringify(records, null, 4))
       const failedRecord = []
 
       await Promise.map(records, record => processCreateRecord(record, failedRecord, message.payload.organizationId), { concurrency: config.PROCESS_CONCURRENCY_COUNT })
