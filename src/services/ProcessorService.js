@@ -191,7 +191,7 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
  */
 async function createUserAttributes (userId, record) {
   let i = 1
-  logger.debug(`*** createUserAttributes('${userId}','${JSON.stringify(record)}')`)
+  logger.debug(`*** createUserAttributes('${userId}','${JSON.stringify(record, null, 4)}')`)
   while (record[`attributeValue${i}`]) {
     logger.debug(`*** createUserAttributes: record number${i}`)
 
@@ -248,6 +248,8 @@ async function processCreate (message) {
     try {
       const file = await helper.downloadFile(message.payload.objectKey)
       const records = helper.parseExcel(file)
+      logger.info('Extracted records below:')
+      logger.info(JSON.stringify(records, null, 4))
       const failedRecord = []
 
       await Promise.map(records, record => processCreateRecord(record, failedRecord, message.payload.organizationId), { concurrency: config.PROCESS_CONCURRENCY_COUNT })
