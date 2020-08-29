@@ -177,7 +177,7 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
   const existingAchievement = await helper.getUbahnSingleRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, {}, true)
 
   if (!existingAchievement || !existingAchievement.id) {
-    await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
+    await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId: _.toString(certifierId), certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
   } else {
     await helper.updateUBahnRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, { certifierId, certifiedDate, name, uri })
   }
