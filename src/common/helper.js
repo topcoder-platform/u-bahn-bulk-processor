@@ -18,6 +18,21 @@ const topcoderM2MConfig = _.pick(config, ['AUTH0_URL', 'AUTH0_TOPCODER_AUDIENCE'
 const ubahnM2M = m2mAuth({ ...ubahnM2MConfig, AUTH0_AUDIENCE: ubahnM2MConfig.AUTH0_UBAHN_AUDIENCE })
 const topcoderM2M = m2mAuth({ ...topcoderM2MConfig, AUTH0_AUDIENCE: topcoderM2MConfig.AUTH0_TOPCODER_AUDIENCE })
 
+/**
+ * Use this function to halt execution
+ * js version of sleep()
+ * @param {Number} ms Timeout in ms
+ */
+async function sleep (ms) {
+  if (!ms) {
+    ms = config.SLEEP_TIME
+  }
+
+  logger.debug(`Sleeping for ${ms} ms`)
+
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 /* Function to get M2M token
  * (U-Bahn APIs only)
  * @returns {Promise}
@@ -118,6 +133,9 @@ async function getUbahnSingleRecord (path, params, isOptionRecord) {
         return status >= 200 && status < 300
       }
     })
+
+    await sleep()
+
     if (_.isArray(res.data)) {
       if (res.data.length === 1) {
         return res.data[0]
@@ -163,6 +181,9 @@ async function createUbahnRecord (path, data) {
   logger.debug(`request POST ${path} with data: ${JSON.stringify(data)}`)
   try {
     const res = await axios.post(`${config.UBAHN_API_URL}${path}`, data, { headers: { Authorization: `Bearer ${token}` } })
+
+    await sleep()
+
     return res.data
   } catch (err) {
     logger.error(err)
@@ -182,6 +203,9 @@ async function updateUBahnRecord (path, data) {
   logger.debug(`request PATCH ${path} with data: ${JSON.stringify(data)}`)
   try {
     const res = await axios.patch(`${config.UBAHN_API_URL}${path}`, data, { headers: { Authorization: `Bearer ${token}` } })
+
+    await sleep()
+
     return res.data
   } catch (err) {
     logger.error(err)
@@ -210,6 +234,9 @@ async function getUserInTopcoder (handle) {
 
   try {
     const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` }, params })
+
+    await sleep()
+
     return res.data
   } catch (err) {
     logger.error(err)
@@ -236,6 +263,9 @@ async function createUserInTopcoder (user) {
   logger.debug(`request POST ${url} with data: ${JSON.stringify(user)}`)
   try {
     const res = await axios.post(url, requestBody, { headers: { Authorization: `Bearer ${token}` } })
+
+    await sleep()
+
     return res.data
   } catch (err) {
     logger.error(err)
@@ -252,6 +282,9 @@ async function createUserInTopcoder (user) {
 async function updateProcessStatus (id, data) {
   const token = await getUbahnM2Mtoken()
   const res = await axios.patch(`${config.UBAHN_SEARCH_UI_API_URL}/uploads/${id}`, data, { headers: { Authorization: `Bearer ${token}` } })
+
+  await sleep()
+
   return res.data
 }
 

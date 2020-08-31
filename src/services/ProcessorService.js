@@ -177,7 +177,7 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
   const existingAchievement = await helper.getUbahnSingleRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, {}, true)
 
   if (!existingAchievement || !existingAchievement.id) {
-    await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId, certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
+    await helper.createUbahnRecord(`/users/${userId}/achievements`, { certifierId: _.toString(certifierId), certifiedDate, name, uri, achievementsProviderId: achievementsProvider.id })
   } else {
     await helper.updateUBahnRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, { certifierId, certifiedDate, name, uri })
   }
@@ -191,7 +191,6 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
  */
 async function createUserAttributes (userId, record) {
   let i = 1
-  logger.debug(`*** createUserAttributes('${userId}','${record}')`)
   while (record[`attributeValue${i}`]) {
     logger.debug(`*** createUserAttributes: record number${i}`)
 
@@ -204,8 +203,6 @@ async function createUserAttributes (userId, record) {
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
     const value = _.toString(record[`attributeValue${i}`])
-    logger.debug(`*** createUserAttributes: attribute/value = ${attribute}/${value}`)
-
     const existingAttribute = await helper.getUbahnSingleRecord(`/users/${userId}/attributes/${attribute.id}`, {}, true)
 
     if (!existingAttribute || !existingAttribute.id) {
@@ -215,6 +212,7 @@ async function createUserAttributes (userId, record) {
     }
     i++
   }
+  logger.debug(`No more attributes to process. Stopped at index ${i}`)
 }
 
 /**
@@ -242,6 +240,8 @@ async function processCreateRecord (record, failedRecord, organizationId) {
  */
 async function processCreate (message) {
   const { status } = message.payload
+
+  logger.info(`Concurrency count set at ${config.PROCESS_CONCURRENCY_COUNT} with type ${typeof config.PROCESS_CONCURRENCY_COUNT}`)
 
   if (status === 'pending') {
     try {

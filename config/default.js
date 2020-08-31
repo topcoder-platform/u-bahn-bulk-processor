@@ -24,7 +24,7 @@ module.exports = {
 
   TOPCODER_USERS_API: process.env.TOPCODER_USERS_API || 'https://api.topcoder-dev.com/v3/users',
 
-  PROCESS_CONCURRENCY_COUNT: process.env.PROCESS_CONCURRENCY_COUNT ? parseInt(process.env.PROCESS_CONCURRENCY_COUNT, 10) : 25,
+  PROCESS_CONCURRENCY_COUNT: process.env.PROCESS_CONCURRENCY_COUNT ? parseInt(process.env.PROCESS_CONCURRENCY_COUNT, 10) : 1,
 
   // When a user is not found, should we proceed to create the user or treat it as error
   CREATE_MISSING_USER_FLAG: process.env.CREATE_MISSING_USER_FLAG === 'true',
@@ -35,5 +35,7 @@ module.exports = {
   TOKEN_CACHE_TIME: process.env.TOKEN_CACHE_TIME,
   AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
   AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET,
-  AUTH0_PROXY_SERVER_URL: process.env.AUTH0_PROXY_SERVER_URL
+  AUTH0_PROXY_SERVER_URL: process.env.AUTH0_PROXY_SERVER_URL,
+
+  SLEEP_TIME: process.env.SLEEP_TIME ? parseInt(process.env.SLEEP_TIME, 10) : 1000
 }
