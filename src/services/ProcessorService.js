@@ -241,7 +241,7 @@ async function processCreateRecord (record, failedRecord, organizationId) {
 async function processCreate (message) {
   const { status } = message.payload
 
-  logger.info(`Concurrency count set at ${config.PROCESS_CONCURRENCY_COUNT} with type ${typeof config.process.env.PAUSE_AFTER_REQUEST}`)
+  logger.info(`Concurrency count set at ${config.PROCESS_CONCURRENCY_COUNT} with type ${typeof config.PROCESS_CONCURRENCY_COUNT}`)
 
   if (status === 'pending') {
     try {
