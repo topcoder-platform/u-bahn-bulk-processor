@@ -241,6 +241,8 @@ async function processCreateRecord (record, failedRecord, organizationId) {
 async function processCreate (message) {
   const { status } = message.payload
 
+  logger.info(`Concurrency count set at ${config.PROCESS_CONCURRENCY_COUNT} with type ${typeof config.process.env.PAUSE_AFTER_REQUEST}`)
+
   if (status === 'pending') {
     try {
       const file = await helper.downloadFile(message.payload.objectKey)
