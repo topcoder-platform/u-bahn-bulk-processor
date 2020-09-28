@@ -103,6 +103,8 @@ async function uploadFailedRecord (records, objectKey) {
       originalname: objectKey
     }
   }).promise()
+
+  return errFileName
 }
 
 /**
