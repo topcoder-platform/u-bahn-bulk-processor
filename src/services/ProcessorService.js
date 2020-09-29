@@ -249,13 +249,15 @@ async function processCreate (message) {
       const records = helper.parseExcel(file)
       const failedRecord = []
       let failedRecordsObjectKey
+      let info
 
       await Promise.map(records, record => processCreateRecord(record, failedRecord, message.payload.organizationId), { concurrency: config.PROCESS_CONCURRENCY_COUNT })
 
       if (failedRecord.length > 0) {
         failedRecordsObjectKey = await helper.uploadFailedRecord(failedRecord, message.payload.objectKey)
+        info = 'Not all records were processed successfully'
       }
-      await helper.updateProcessStatus(message.payload.id, { status: 'completed', failedRecordsObjectKey })
+      await helper.updateProcessStatus(message.payload.id, { status: 'completed', failedRecordsObjectKey, info })
       logger.info(`processing of the record(s) completed, id: ${message.payload.id}, success count: ${records.length - failedRecord.length}, fail count: ${failedRecord.length}`)
     } catch (err) {
       await helper.updateProcessStatus(message.payload.id, { status: 'failed', info: err.message })
