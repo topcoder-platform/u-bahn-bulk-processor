@@ -150,9 +150,9 @@ async function createUserSkill (userId, skillProviderName, skillName, certifierI
   const existingSkill = await helper.getUbahnSingleRecord(`/users/${userId}/skills/${skill.id}`, {}, true)
 
   if (!existingSkill || !existingSkill.id) {
-    await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue, skillId: skill.id })
+    await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue: _.toString(metricValue), skillId: skill.id })
   } else {
-    await helper.updateUBahnRecord(`/users/${userId}/skills/${skill.id}`, { certifierId, certifiedDate, metricValue })
+    await helper.updateUBahnRecord(`/users/${userId}/skills/${skill.id}`, { certifierId, certifiedDate, metricValue: _.toString(metricValue) })
   }
 }
 
