@@ -88,6 +88,7 @@ async function uploadFailedRecord (records, objectKey, header) {
   // new workbook
   const wb = XLSX.utils.book_new()
   const wsData = []
+  header.push('validationMessage')
   wsData.push(header)
   wsData.push(...(records.map(record => _.at(record, header))))
   const ws = XLSX.utils.aoa_to_sheet(wsData)
