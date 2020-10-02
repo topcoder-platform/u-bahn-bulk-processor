@@ -144,15 +144,24 @@ async function createUserSkill (userId, skillProviderName, skillName, certifierI
     return
   }
   const skillProvider = await helper.getUbahnSingleRecord('/skillsProviders', { name: skillProviderName })
+
+  if (!skillProvider) {
+    throw Error(`Cannot find skill provider with name ${skillProviderName}`)
+  }
+
   const skill = await helper.getUbahnSingleRecord('/skills', { skillProviderId: skillProvider.id, name: skillName })
+
+  if (!skill) {
+    throw Error(`Cannot find skill with name ${skillName} under skill provider ${skillProviderName}`)
+  }
 
   // Does the skill already exist on the user?
   const existingSkill = await helper.getUbahnSingleRecord(`/users/${userId}/skills/${skill.id}`, {}, true)
 
   if (!existingSkill || !existingSkill.id) {
-    await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue, skillId: skill.id })
+    await helper.createUbahnRecord(`/users/${userId}/skills`, { certifierId, certifiedDate, metricValue: _.toString(metricValue), skillId: skill.id })
   } else {
-    await helper.updateUBahnRecord(`/users/${userId}/skills/${skill.id}`, { certifierId, certifiedDate, metricValue })
+    await helper.updateUBahnRecord(`/users/${userId}/skills/${skill.id}`, { certifierId, certifiedDate, metricValue: _.toString(metricValue) })
   }
 }
 
@@ -174,6 +183,11 @@ async function createAchievement (userId, providerName, certifierId, certifiedDa
     return
   }
   const achievementsProvider = await helper.getUbahnSingleRecord('/achievementsProviders', { name: providerName })
+
+  if (!achievementsProvider) {
+    throw Error(`Cannot find achievement provider with name ${providerName}`)
+  }
+
   const existingAchievement = await helper.getUbahnSingleRecord(`/users/${userId}/achievements/${achievementsProvider.id}`, {}, true)
 
   if (!existingAchievement || !existingAchievement.id) {
@@ -201,7 +215,17 @@ async function createUserAttributes (userId, record) {
       return
     }
     const attributeGroup = await helper.getUbahnSingleRecord('/attributeGroups', { name: record[`attributeGroupName${i}`] })
+
+    if (!attributeGroup) {
+      throw Error(`Cannot find attribute group with name ${record[`attributeGroupName${i}`]}`)
+    }
+
     const attribute = await helper.getUbahnSingleRecord('/attributes', { attributeGroupId: attributeGroup.id, name: record[`attributeName${i}`] })
+
+    if (!attribute) {
+      throw Error(`Cannot find attribute with name ${record[`attributeName${i}`]} under attribute group wth name ${record[`attributeGroupName${i}`]}`)
+    }
+
     const value = _.toString(record[`attributeValue${i}`])
     const existingAttribute = await helper.getUbahnSingleRecord(`/users/${userId}/attributes/${attribute.id}`, {}, true)
 
@@ -246,15 +270,18 @@ async function processCreate (message) {
   if (status === 'pending') {
     try {
       const file = await helper.downloadFile(message.payload.objectKey)
-      const records = helper.parseExcel(file)
+      const { header, resultData: records } = helper.parseExcel(file)
       const failedRecord = []
+      let failedRecordsObjectKey
+      let info
 
       await Promise.map(records, record => processCreateRecord(record, failedRecord, message.payload.organizationId), { concurrency: config.PROCESS_CONCURRENCY_COUNT })
 
       if (failedRecord.length > 0) {
-        await helper.uploadFailedRecord(failedRecord, message.payload.objectKey)
+        failedRecordsObjectKey = await helper.uploadFailedRecord(failedRecord, message.payload.objectKey, header)
+        info = 'Not all records were processed successfully'
       }
-      await helper.updateProcessStatus(message.payload.id, { status: 'completed' })
+      await helper.updateProcessStatus(message.payload.id, { status: 'completed', failedRecordsObjectKey, info })
       logger.info(`processing of the record(s) completed, id: ${message.payload.id}, success count: ${records.length - failedRecord.length}, fail count: ${failedRecord.length}`)
     } catch (err) {
       await helper.updateProcessStatus(message.payload.id, { status: 'failed', info: err.message })

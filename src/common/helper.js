@@ -79,15 +79,16 @@ async function downloadFile (objectKey) {
  * Function to upload error records file to S3
  * @param {Array} records error records
  * @param {String} objectKey source file s3 object key
+ * @param {Array} header Array of strings for the header row
  * @returns {Promise}
  */
-async function uploadFailedRecord (records, objectKey) {
+async function uploadFailedRecord (records, objectKey, header) {
   const extIndex = objectKey.lastIndexOf('.')
   const errFileName = `${objectKey.substring(0, extIndex)}_errors_${Date.now()}${objectKey.substring(extIndex)}`
   // new workbook
   const wb = XLSX.utils.book_new()
   const wsData = []
-  const header = Object.keys(records[0])
+  header.push('validationMessage')
   wsData.push(header)
   wsData.push(...(records.map(record => _.at(record, header))))
   const ws = XLSX.utils.aoa_to_sheet(wsData)
@@ -103,6 +104,8 @@ async function uploadFailedRecord (records, objectKey) {
       originalname: objectKey
     }
   }).promise()
+
+  return errFileName
 }
 
 /**
@@ -327,7 +330,7 @@ function parseExcel (file) {
     }
   }
   logger.info(`parsing excel file finish, the record count is ${resultData.length}`)
-  return resultData
+  return { header, resultData }
 }
 
 module.exports = {
