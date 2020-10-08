@@ -217,12 +217,12 @@ async function updateUBahnRecord (path, data) {
 }
 
 /**
- * Returns the user in Topcoder identified by the handle
- * @param {String} handle The user handle
+ * Returns the user in Topcoder identified by the email
+ * @param {String} email The user email
  */
-async function getUserInTopcoder (handle) {
+async function getUserInTopcoder (email) {
   const url = config.TOPCODER_USERS_API
-  const params = { filter: `handle=${handle}` }
+  const params = { filter: `email=${email}` }
   let token
 
   try {
@@ -313,9 +313,9 @@ function parseExcel (file) {
     }
   }
 
-  if (!header.includes('handle')) {
-    logger.error('"handle" column is missing. Cannot process the rows. Aborting.')
-    throw Error('"handle" column is missing. Cannot process the rows. Aborting.')
+  if (!header.includes('email')) {
+    logger.error('"email" column is missing. Cannot process the rows. Aborting.')
+    throw Error('"email" column is missing. Cannot process the rows. Aborting.')
   }
   for (let i = rowStart + 1; i <= rowEnd; i++) {
     const rowData = {}

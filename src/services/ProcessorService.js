@@ -37,7 +37,7 @@ async function createUserInUbahn ({ handle, firstName, lastName }) {
  */
 async function createUserInTopcoder (user) {
   const { handle, firstName, lastName, email, countryName, providerType, provider, userId } = user
-  logger.debug(`Creating user with handle ${handle} in Topcoder`)
+  logger.debug(`Creating user with handle ${handle} in Topcoder and email ${email}`)
 
   const topcoderUser = {
     handle,
@@ -77,19 +77,10 @@ async function createUserInTopcoder (user) {
  */
 async function createUser (user, organizationId) {
   let topcoderUserId
-  // Check if the user exists in Topcoder
-  const res = await helper.getUserInTopcoder(user.handle)
 
-  const topcoderUser = res.result.content.find(u => u.handle === user.handle)
-
-  if (!topcoderUser) {
-    logger.debug(`User with handle ${user.handle} not found in Topcoder. Creating it...`)
-    // Create the user in Topcoder
-    topcoderUserId = await createUserInTopcoder(user)
-  } else {
-    logger.debug(`User with handle ${user.handle} found in Topcoder. Not creating it again...`)
-    topcoderUserId = topcoderUser.id
-  }
+  logger.debug(`User with email ${user.email} not found in Topcoder. Creating it...`)
+  // Create the user in Topcoder
+  topcoderUserId = await createUserInTopcoder(user)
 
   // Create the user in UBahn api
   const ubahnUserId = await createUserInUbahn(user)
@@ -111,19 +102,47 @@ async function createUser (user, organizationId) {
  * @returns {Promise}
  */
 async function getUserId (user, organizationId) {
-  const record = await helper.getUbahnSingleRecord('/users', {
-    handle: user.handle
-  }, true)
-  if (record) {
-    return record.id
+  // Get the user's handle in topcoder
+  const res = await helper.getUserInTopcoder(user.email)
+  const topcoderUser = res.result.content.find(u => u.email === user.email)
+
+  if (topcoderUser) {
+    logger.debug(`User with email ${user.email} found in Topcoder. Not creating the user in Topcoder again...`)
+    // Use the handle from Topcoder (ignore the one in the excel, if provided)
+    user.handle = topcoderUser.handle
+
+    // Get the user id in ubahn
+    const record = await helper.getUbahnSingleRecord('/users', {
+      handle: user.handle
+    }, true)
+
+    if (record) {
+      return record.id
+    } else if (config.CREATE_MISSING_USER_FLAG) {
+      // User exists in Topcoder, but not in ubahn
+      // Create the user in UBahn
+
+      // Copy the details from the Topcoder user itself
+      user.firstName = topcoderUser.firstName
+      user.lastName = topcoderUser.lastName
+      const ubahnUserId = await createUserInUbahn(user)
+
+      // Now, proceed to map the topcoder user id with the ubahn user id
+      await helper.createUbahnRecord(`/users/${ubahnUserId}/externalProfiles`, {
+        organizationId,
+        externalId: topcoderUser.id
+      })
+
+      // We will be only working with the user id in UBahn
+      return ubahnUserId
+    }
+
+    throw new Error(`Could not find user with handle ${user.handle} and email ${user.email} in Ubahn`)
+  } else if (config.CREATE_MISSING_USER_FLAG) {
+    return createUser(user, organizationId)
   }
 
-  // No user found. Should we create the user or treat it as an error?
-  if (config.CREATE_MISSING_USER_FLAG) {
-    return createUser(user, organizationId)
-  } else {
-    throw new Error(`Could not find user with handle ${user.handle}`)
-  }
+  throw new Error(`Could not find user with email ${user.email} in Topcoder`)
 }
 
 /**
