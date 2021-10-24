@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@hapi/joi": "^15.1.0",
-    "aws-sdk": "^2.476.0",
+    "aws-sdk": "^2.999.0",
     "axios": "^0.19.2",
     "bluebird": "^3.5.5",
     "config": "^3.1.0",
