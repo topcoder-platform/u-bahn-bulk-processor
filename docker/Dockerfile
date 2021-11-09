@@ -1,5 +1,5 @@
 # Use the base image with Node.js 12.16.3
-FROM node:12.16.3
+FROM node:12.22
 
 # Copy the current directory into the Docker image
 COPY . /ubahn-bulk-record-processor
